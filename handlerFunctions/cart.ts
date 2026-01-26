@@ -1,6 +1,7 @@
 import { CartItem, Product } from "@/models/models";
 import axios from "axios";
-export const addToCart = async (product: Product) => {
+import { UUID } from "crypto";
+export const addToCart = async (product: Product,quantity:number) => {
   if (!product || Object.keys(product).length === 0) {
     return;
   } else {
@@ -17,6 +18,8 @@ export const addToCart = async (product: Product) => {
         ? JSON.parse(savedCartItems)
         : [];
       let cartItem: CartItem = {
+        id: product.id,
+        quantity:quantity,
         category_name: product.category_name,
         name: product.name,
         image_url:
@@ -30,6 +33,37 @@ export const addToCart = async (product: Product) => {
       };
       cartItems.push(cartItem);
       localStorage.setItem("cart-items", JSON.stringify(cartItems));
+      return res.data;
+    } catch (error) {
+      console.error(error);
+    }
+  }
+};
+export const removeItem = async (id: UUID) => {
+  if (!id) {
+    return;
+  } else {
+    try {
+      const res = await axios.delete(
+        `${process.env.NEXT_PUBLIC_API_URL}/cart/remove-item/${id}`,
+      );
+      return res.data;
+    } catch (error) {
+      console.error(error);
+    }
+  }
+};
+export const updateQuantity = async (id: UUID, quantity: number) => {
+  if (!id || !quantity || quantity <= 0 || quantity >= 10) {
+    return;
+  } else {
+    try {
+      const res = await axios.patch(
+        `${process.env.NEXT_PUBLIC_API_URL}/cart/remove-item/${id}`,
+        {
+          quantity: quantity,
+        },
+      );
       return res.data;
     } catch (error) {
       console.error(error);

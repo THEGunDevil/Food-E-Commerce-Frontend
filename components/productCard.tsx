@@ -19,8 +19,8 @@ export default function ProductCard({ product }: { product: Product }) {
   const router = useRouter();
   const { addToCartMutate } = useCart();
 
-  const handleAddToCart = (p:Product) => {
-    addToCartMutate.mutate(p);
+  const handleAddToCart = (p: Product, quantity: number = 1) => {
+    addToCartMutate.mutate({ product: p, quantity });
   };
   return (
     <Card
@@ -48,9 +48,9 @@ export default function ProductCard({ product }: { product: Product }) {
           </Button>
           <div
             className={`flex items-center justify-center h-48 mb-4 rounded-lg ${
-              product.category === "Fresh Fruits"
+              product.category_name === "Fresh Fruits"
                 ? "bg-red-50"
-                : product.category === "Vegetables"
+                : product.category_name === "Vegetables"
                   ? "bg-green-50"
                   : "bg-muted"
             }`}
@@ -103,7 +103,7 @@ export default function ProductCard({ product }: { product: Product }) {
           className="w-full cursor-pointer"
           onClick={(e) => {
             e.stopPropagation();
-            handleAddToCart(product);
+            handleAddToCart(product, 1);
           }}
         >
           <ShoppingCart className="h-4 w-4 mr-2" />

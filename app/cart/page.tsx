@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   Minus,
@@ -31,64 +31,44 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Separator } from "@radix-ui/react-dropdown-menu";
 import { useQuery } from "@tanstack/react-query";
 import { fetchCartItems } from "@/utils/utils";
-import { Product } from "@/models/models";
+import { CartItem } from "@/models/models";
+import { useCart } from "@/hooks/cart";
 import { UUID } from "crypto";
-
+import { useAuth } from "@/contexts/authContext";
 // Full Cart Page Component
 const CartPage = () => {
+  const {userID} = useAuth()
   const {
     data: cartResponse,
     isLoading: cartLoading,
     isError: cartError,
   } = useQuery({
     queryKey: ["cartItems"],
-    queryFn: () => fetchCartItems(),
+    queryFn: () => fetchCartItems(userID),
   });
-  const savedCartItems = localStorage.getItem("cartItems");
-  let initialCartItems: Product[] = cartResponse;
+  const { removeFromCart, updateItemQuantity } = useCart();
+  const savedCartItems = localStorage.getItem("cart-items");
+  const [cartItems, setCartItems] = useState<CartItem[]>(cartResponse);
   if (savedCartItems) {
     try {
       const parsed = JSON.parse(savedCartItems);
-      initialCartItems = Array.isArray(parsed) ? parsed : cartResponse;
+      setCartItems(Array.isArray(parsed) ? parsed : cartResponse)
     } catch (error) {
-      initialCartItems = cartResponse;
+      setCartItems(cartResponse)
       console.error(error);
     }
   }
-  console.log(initialCartItems);
-  
-  const [cartItems, setCartItems] = useState<Product[]>(initialCartItems);
   const [selectedDelivery, setSelectedDelivery] = useState("free");
+  const [quantity, setQuantity] = useState<number>(1);
+  const handleQuantity = (id: UUID, q: number) => {
+    updateItemQuantity.mutate({ id, quantity: q });
+  };
+  useEffect(() => {
+    handleQuantity;
+  }, [quantity]);
   const router = useRouter();
-  const updateQuantity = (id: UUID, newQuantity: number) => {
-    if (newQuantity < 1) return;
-
-    setCartItems((items) =>
-      items.map((item) =>
-        item.id === id ? { ...item, quantity: newQuantity } : item,
-      ),
-    );
-  };
-
-  const removeItem = (id: UUID) => {
-    setCartItems((items) => items.filter((item) => item.id !== id));
-  };
-
-  const calculateSubtotal = () => {
-    return cartItems.reduce(
-      (total, item) => total + item.price * item.quantity,
-      0,
-    );
-  };
-
-  const calculateTotal = () => {
-    const subtotal = calculateSubtotal();
-    const deliveryPrice =
-      deliveryOptions.find((d) => d.id === selectedDelivery)?.price || 0;
-    return subtotal + deliveryPrice;
-  };
-
   const itemCount = cartItems.reduce((total, item) => total + item.quantity, 0);
+  console.log(userID);
 
   if (cartItems.length === 0) {
     return (
@@ -145,7 +125,7 @@ const CartPage = () => {
                     {/* Product Image */}
                     <div className="shrink-0">
                       <div className="h-24 w-24 rounded-xl bg-muted flex items-center justify-center">
-                        <span className="text-4xl">{item.image}</span>
+                        <span className="text-4xl">{item.image_url}</span>
                       </div>
                     </div>
 
@@ -157,7 +137,7 @@ const CartPage = () => {
                             {item.name}
                           </h3>
                           <p className="text-sm text-muted-foreground mb-2">
-                            {item.category}
+                            {item.category_name}
                           </p>
                           <div className="flex items-center gap-2">
                             <span className="text-2xl font-bold">
@@ -173,7 +153,7 @@ const CartPage = () => {
                         <Button
                           variant="ghost"
                           size="icon"
-                          onClick={() => removeItem(item.id)}
+                          onClick={() => removeFromCart.mutate(item.id)}
                           className="h-8 w-8 text-muted-foreground hover:text-destructive"
                         >
                           <Trash2 className="h-4 w-4" />
@@ -185,22 +165,38 @@ const CartPage = () => {
                           <Button
                             variant="outline"
                             size="icon"
-                            onClick={() =>
-                              updateQuantity(item.id, item.quantity - 1)
-                            }
+                            onClick={() => {
+                              if (
+                                !quantity ||
+                                quantity <= 0 ||
+                                quantity >= 10
+                              ) {
+                                return;
+                              }
+                              setQuantity((prev) => prev - 1);
+                              handleQuantity(item.id, quantity);
+                            }}
                             className="h-9 w-9"
                           >
                             <Minus className="h-4 w-4" />
                           </Button>
                           <span className="w-12 text-center text-lg font-medium">
-                            {item.quantity}
+                            {quantity}
                           </span>
                           <Button
                             variant="outline"
                             size="icon"
-                            onClick={() =>
-                              updateQuantity(item.id, item.quantity + 1)
-                            }
+                            onClick={() => {
+                              if (
+                                !quantity ||
+                                quantity <= 0 ||
+                                quantity >= 10
+                              ) {
+                                return;
+                              }
+                              setQuantity((prev) => prev + 1);
+                              handleQuantity(item.id, quantity);
+                            }}
                             className="h-9 w-9"
                           >
                             <Plus className="h-4 w-4" />
@@ -245,7 +241,7 @@ const CartPage = () => {
                   value={selectedDelivery}
                   onValueChange={setSelectedDelivery}
                 >
-                  {deliveryOptions.map((option) => (
+                  {/* {deliveryOptions.map((option) => (
                     <div
                       key={option.id}
                       className="flex items-center w-full space-x-2"
@@ -273,14 +269,14 @@ const CartPage = () => {
                         </div>
                       </Label>
                     </div>
-                  ))}
+                  ))} */}
                 </RadioGroup>
               </div>
 
               <Separator />
 
               {/* Price Breakdown */}
-              <div className="space-y-3">
+              {/* <div className="space-y-3">
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">
                     Subtotal ({itemCount} items)
@@ -308,7 +304,7 @@ const CartPage = () => {
                   <span>Total</span>
                   <span>${calculateTotal().toFixed(2)}</span>
                 </div>
-              </div>
+              </div> */}
 
               {/* Security Info */}
               <Alert className="bg-green-50 border-green-200">

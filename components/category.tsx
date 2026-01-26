@@ -17,7 +17,7 @@ export const CategoryCard = ({
         >
           <img
             src={category.cat_image_url}
-            className="w-36 h-36 object-cover"
+            className="w-40 h-40 rounded-md object-cover"
             alt={category.name}
           />
           {/* <Image priority width={100} fill

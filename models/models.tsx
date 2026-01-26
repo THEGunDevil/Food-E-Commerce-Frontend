@@ -1,5 +1,7 @@
+import { UUID } from "crypto";
+
 export type Product = {
-  id: string;
+  id: UUID;
   category_name: string;
   category_id: string;
   name: string;
@@ -20,11 +22,13 @@ export type Product = {
   favorite: boolean;
 };
 export type CartItem = {
+  id: UUID;
   category_name: string;
   name: string;
   description: string;
   price: number;
   originalPrice?: number;
+  quantity: number;
   inStock: boolean;
   stock_quantity: number;
   image_url: string;

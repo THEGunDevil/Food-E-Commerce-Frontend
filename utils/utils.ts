@@ -1,4 +1,5 @@
 import axios from "axios";
+import { UUID } from "crypto";
 
 export function ConvertStringToDate(dateStr: string) {
   if (!dateStr) return "-";
@@ -24,9 +25,9 @@ export const fetchCategoryData = async () => {
   if (!response?.data) throw new Error("failed to fetch category data");
   return response?.data;
 };
-export const fetchCartItems = async () => {
+export const fetchCartItems = async (userID:string) => {
   const response = await axios.get(
-    `${process.env.NEXT_PUBLIC_API_URL}/cart/items`
+    `${process.env.NEXT_PUBLIC_API_URL}/cart/items/${userID}`
   );
   if (!response?.data) throw new Error("failed to fetch cart data");
   return response?.data;
