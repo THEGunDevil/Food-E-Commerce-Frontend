@@ -35,40 +35,59 @@ import { CartItem } from "@/models/models";
 import { useCart } from "@/hooks/cart";
 import { UUID } from "crypto";
 import { useAuth } from "@/contexts/authContext";
+import Image from "next/image";
 // Full Cart Page Component
 const CartPage = () => {
-  const {userID} = useAuth()
+  const { userID } = useAuth();
   const {
     data: cartResponse,
     isLoading: cartLoading,
     isError: cartError,
   } = useQuery({
     queryKey: ["cartItems"],
-    queryFn: () => fetchCartItems(userID),
+    queryFn: () => fetchCartItems(),
   });
   const { removeFromCart, updateItemQuantity } = useCart();
-  const savedCartItems = localStorage.getItem("cart-items");
-  const [cartItems, setCartItems] = useState<CartItem[]>(cartResponse);
-  if (savedCartItems) {
-    try {
-      const parsed = JSON.parse(savedCartItems);
-      setCartItems(Array.isArray(parsed) ? parsed : cartResponse)
-    } catch (error) {
-      setCartItems(cartResponse)
-      console.error(error);
+  const [cartItems, setCartItems] = useState<CartItem[]>([]);
+  useEffect(() => {
+    if (cartResponse) {
+      setCartItems(Array.isArray(cartResponse.data) ? cartResponse.data : []);
+      return;
     }
-  }
+  }, [cartResponse]);
   const [selectedDelivery, setSelectedDelivery] = useState("free");
-  const [quantity, setQuantity] = useState<number>(1);
   const handleQuantity = (id: UUID, q: number) => {
     updateItemQuantity.mutate({ id, quantity: q });
   };
-  useEffect(() => {
-    handleQuantity;
-  }, [quantity]);
   const router = useRouter();
-  const itemCount = cartItems.reduce((total, item) => total + item.quantity, 0);
-  console.log(userID);
+  const itemCount = cartItems.length;
+  console.log(cartResponse);
+
+  if (cartLoading) {
+    return (
+      <div className="container mx-auto px-4 py-12">
+        <div className="max-w-2xl mx-auto text-center">
+          <h1 className="text-3xl font-bold mb-4">Loading Cart...</h1>
+        </div>
+      </div>
+    );
+  }
+
+  if (cartError) {
+    return (
+      <div className="container mx-auto px-4 py-12">
+        <div className="max-w-2xl mx-auto text-center">
+          <h1 className="text-3xl font-bold mb-4">Error Loading Cart</h1>
+          <p className="text-muted-foreground mb-8">
+            There was an issue fetching your cart items. Please try again.
+          </p>
+          <Button size="lg" onClick={() => router.push("/shop")}>
+            Start Shopping
+          </Button>
+        </div>
+      </div>
+    );
+  }
 
   if (cartItems.length === 0) {
     return (
@@ -118,14 +137,29 @@ const CartPage = () => {
         {/* Left Column - Cart Items */}
         <div className="lg:col-span-2">
           <div className="space-y-4">
-            {cartItems.map((item) => (
-              <Card key={item.id} className="overflow-hidden">
+            {cartItems.map((item, index) => (
+              <Card key={index} className="overflow-hidden">
                 <CardContent className="p-6">
                   <div className="flex flex-col sm:flex-row gap-6">
                     {/* Product Image */}
                     <div className="shrink-0">
                       <div className="h-24 w-24 rounded-xl bg-muted flex items-center justify-center">
-                        <span className="text-4xl">{item.image_url}</span>
+                        {item?.image?.map((i) => {
+                          if (i.is_primary) {
+                            return (
+                              <Image
+                                key={i.id}
+                                src={i.image_url}
+                                alt={item.name}
+                                className="h-full w-full object-cover rounded-xl"
+                                width={96} // Explicit width/height for Next.js Image optimization (adjust based on h-24 w-24, e.g., 96px for 24*4 assuming 1rem=16px)
+                                height={96}
+                                priority={false} // Optional: Set to true if this is above-the-fold
+                              />
+                            );
+                          }
+                          return null; // Skip non-primary images
+                        })}
                       </div>
                     </div>
 
@@ -153,7 +187,9 @@ const CartPage = () => {
                         <Button
                           variant="ghost"
                           size="icon"
-                          onClick={() => removeFromCart.mutate(item.id)}
+                          onClick={() =>
+                            removeFromCart.mutate(item.menu_item_id)
+                          }
                           className="h-8 w-8 text-muted-foreground hover:text-destructive"
                         >
                           <Trash2 className="h-4 w-4" />
@@ -165,38 +201,30 @@ const CartPage = () => {
                           <Button
                             variant="outline"
                             size="icon"
-                            onClick={() => {
-                              if (
-                                !quantity ||
-                                quantity <= 0 ||
-                                quantity >= 10
-                              ) {
-                                return;
-                              }
-                              setQuantity((prev) => prev - 1);
-                              handleQuantity(item.id, quantity);
-                            }}
+                            onClick={() =>
+                              handleQuantity(
+                                item.menu_item_id,
+                                item.quantity - 1,
+                              )
+                            }
+                            disabled={item.quantity <= 1}
                             className="h-9 w-9"
                           >
                             <Minus className="h-4 w-4" />
                           </Button>
                           <span className="w-12 text-center text-lg font-medium">
-                            {quantity}
+                            {item.quantity}
                           </span>
                           <Button
                             variant="outline"
                             size="icon"
-                            onClick={() => {
-                              if (
-                                !quantity ||
-                                quantity <= 0 ||
-                                quantity >= 10
-                              ) {
-                                return;
-                              }
-                              setQuantity((prev) => prev + 1);
-                              handleQuantity(item.id, quantity);
-                            }}
+                            onClick={() =>
+                              handleQuantity(
+                                item.menu_item_id,
+                                item.quantity + 1,
+                              )
+                            }
+                            disabled={item.quantity >= 10}
                             className="h-9 w-9"
                           >
                             <Plus className="h-4 w-4" />

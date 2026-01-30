@@ -20,18 +20,24 @@ export function ConvertStringToDate(dateStr: string) {
 }
 export const fetchCategoryData = async () => {
   const response = await axios.get(
-    `${process.env.NEXT_PUBLIC_API_URL}/categories/active`
+    `${process.env.NEXT_PUBLIC_API_URL}/categories/active`, {
+      withCredentials: true,
+    }
   );
   if (!response?.data) throw new Error("failed to fetch category data");
   return response?.data;
 };
-export const fetchCartItems = async (userID:string) => {
+
+export const fetchCartItems = async () => {
   const response = await axios.get(
-    `${process.env.NEXT_PUBLIC_API_URL}/cart/items/${userID}`
+    `${process.env.NEXT_PUBLIC_API_URL}/cart/items`, {
+      withCredentials:true,
+    }
   );
   if (!response?.data) throw new Error("failed to fetch cart data");
   return response?.data;
 };
+
 export const fetchMenuData = async (limit: number, page: number) => {
   const params = new URLSearchParams({
     limit: limit.toString(),

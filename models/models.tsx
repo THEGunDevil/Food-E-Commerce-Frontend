@@ -22,7 +22,8 @@ export type Product = {
   favorite: boolean;
 };
 export type CartItem = {
-  id: UUID;
+  cart_id: UUID;
+  menu_item_id: UUID;
   category_name: string;
   name: string;
   description: string;
@@ -30,8 +31,15 @@ export type CartItem = {
   originalPrice?: number;
   quantity: number;
   inStock: boolean;
-  stock_quantity: number;
-  image_url: string;
+  stock_quantity?: number;
+  image: [
+    {
+      display_order: number;
+      id: string;
+      image_url: string;
+      is_primary: boolean;
+    },
+  ];
 };
 
 export type Category = {

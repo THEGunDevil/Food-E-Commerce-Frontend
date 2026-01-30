@@ -1,7 +1,7 @@
 import { CartItem, Product } from "@/models/models";
 import axios from "axios";
 import { UUID } from "crypto";
-export const addToCart = async (product: Product,quantity:number) => {
+export const addToCart = async (product: Product, quantity: number) => {
   if (!product || Object.keys(product).length === 0) {
     return;
   } else {
@@ -11,28 +11,10 @@ export const addToCart = async (product: Product,quantity:number) => {
         {
           menu_item_id: product.id,
           quantity: 1,
-        },
+        }, {
+          withCredentials:true,
+        }
       );
-      const savedCartItems = localStorage.getItem("cart-items");
-      const cartItems: CartItem[] = savedCartItems
-        ? JSON.parse(savedCartItems)
-        : [];
-      let cartItem: CartItem = {
-        id: product.id,
-        quantity:quantity,
-        category_name: product.category_name,
-        name: product.name,
-        image_url:
-          product.images.find((img) => img.display_order === 1)?.image_url ||
-          product.images[0]?.image_url,
-        description: product.description,
-        inStock: product.stock_quantity >= 1,
-        stock_quantity: product.stock_quantity,
-        originalPrice: product.price,
-        price: product.discount_price,
-      };
-      cartItems.push(cartItem);
-      localStorage.setItem("cart-items", JSON.stringify(cartItems));
       return res.data;
     } catch (error) {
       console.error(error);
