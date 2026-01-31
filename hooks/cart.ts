@@ -2,7 +2,6 @@
 import { addToCart, removeItem, updateQuantity } from "@/handlerFunctions/cart";
 import { Product } from "@/models/models";
 import { useMutation } from "@tanstack/react-query";
-import { UUID } from "crypto";
 import { useRouter } from "next/navigation";
 export const useCart = () => {
   const router = useRouter()
@@ -15,13 +14,13 @@ export const useCart = () => {
     onSuccess:()=> router.push("/cart")
   });
   const removeFromCart = useMutation({
-    mutationFn: (id: UUID) => removeItem(id),
+    mutationFn: (id: string) => removeItem(id),
     onError: () => {
       console.error("failed to remove item from cart");
     },
   });
   const updateItemQuantity = useMutation({
-    mutationFn: ({ id, quantity }: { id: UUID; quantity: number }) =>
+    mutationFn: ({ id, quantity }: { id: string; quantity: number }) =>
       updateQuantity(id, quantity),
     onError: () => {
       console.error("there was an error updating items quantity");

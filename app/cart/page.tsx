@@ -29,7 +29,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Separator } from "@radix-ui/react-dropdown-menu";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { fetchCartItems } from "@/utils/utils";
 import { CartItem } from "@/models/models";
 import { useCart } from "@/hooks/cart";
@@ -49,6 +49,7 @@ const CartPage = () => {
   });
   const { removeFromCart, updateItemQuantity } = useCart();
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
+  const queryClient = useQueryClient();
   useEffect(() => {
     if (cartResponse) {
       setCartItems(Array.isArray(cartResponse.data) ? cartResponse.data : []);
@@ -56,12 +57,32 @@ const CartPage = () => {
     }
   }, [cartResponse]);
   const [selectedDelivery, setSelectedDelivery] = useState("free");
-  const handleQuantity = (id: UUID, q: number) => {
-    updateItemQuantity.mutate({ id, quantity: q });
+  // --- HANDLERS ---
+  const handleQuantity = (id: string, newQuantity: number) => {
+    if (newQuantity < 1) return;
+
+    updateItemQuantity.mutate(
+      { id, quantity: newQuantity },
+      {
+        onSuccess: () => {
+          // 🔥 CRITICAL: Invalidate cache to pull fresh line_subtotal from backend
+          queryClient.invalidateQueries({ queryKey: ["cartItems"] });
+        },
+      }
+    );
   };
+
+  const handleRemoveItem = (id: string) => {
+    removeFromCart.mutate(id, {
+      onSuccess: () => {
+        queryClient.invalidateQueries({ queryKey: ["cartItems"] });
+      },
+    });
+  };
+
   const router = useRouter();
-  const itemCount = cartItems.length;
-  console.log(cartResponse);
+  const itemCount = cartResponse?.total_items;
+  console.log(cartItems);
 
   if (cartLoading) {
     return (
@@ -175,21 +196,15 @@ const CartPage = () => {
                           </p>
                           <div className="flex items-center gap-2">
                             <span className="text-2xl font-bold">
-                              ${item.price}
+                              ${item?.price?.toFixed(2)}
                             </span>
-                            {item.originalPrice && (
-                              <span className="text-muted-foreground line-through">
-                                ${item.originalPrice}
-                              </span>
-                            )}
+
                           </div>
                         </div>
                         <Button
                           variant="ghost"
                           size="icon"
-                          onClick={() =>
-                            removeFromCart.mutate(item.menu_item_id)
-                          }
+                          onClick={() => handleRemoveItem(item.menu_item_id)}
                           className="h-8 w-8 text-muted-foreground hover:text-destructive"
                         >
                           <Trash2 className="h-4 w-4" />
@@ -220,7 +235,7 @@ const CartPage = () => {
                             size="icon"
                             onClick={() =>
                               handleQuantity(
-                                item.menu_item_id,
+                                item.menu_item_id as UUID,
                                 item.quantity + 1,
                               )
                             }
@@ -232,10 +247,10 @@ const CartPage = () => {
                         </div>
                         <div className="text-right">
                           <p className="text-xl font-bold">
-                            ${(item.price * item.quantity).toFixed(2)}
+                            ${item.line_subtotal?.toFixed(2)}
                           </p>
                           <p className="text-sm text-muted-foreground">
-                            ${item.price} each
+                            ${item?.price} each
                           </p>
                         </div>
                       </div>

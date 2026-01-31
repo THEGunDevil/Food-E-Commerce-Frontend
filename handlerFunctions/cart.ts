@@ -1,6 +1,5 @@
-import { CartItem, Product } from "@/models/models";
+import { Product } from "@/models/models";
 import axios from "axios";
-import { UUID } from "crypto";
 export const addToCart = async (product: Product, quantity: number) => {
   if (!product || Object.keys(product).length === 0) {
     return;
@@ -11,9 +10,10 @@ export const addToCart = async (product: Product, quantity: number) => {
         {
           menu_item_id: product.id,
           quantity: 1,
-        }, {
-          withCredentials:true,
-        }
+        },
+        {
+          withCredentials: true,
+        },
       );
       return res.data;
     } catch (error) {
@@ -21,13 +21,15 @@ export const addToCart = async (product: Product, quantity: number) => {
     }
   }
 };
-export const removeItem = async (id: UUID) => {
+export const removeItem = async (id: string) => {
   if (!id) {
     return;
   } else {
     try {
       const res = await axios.delete(
-        `${process.env.NEXT_PUBLIC_API_URL}/cart/remove-item/${id}`,
+        `${process.env.NEXT_PUBLIC_API_URL}/cart/remove-item/${id}`, {
+          withCredentials:true
+        },
       );
       return res.data;
     } catch (error) {
@@ -35,16 +37,18 @@ export const removeItem = async (id: UUID) => {
     }
   }
 };
-export const updateQuantity = async (id: UUID, quantity: number) => {
-  if (!id || !quantity || quantity <= 0 || quantity >= 10) {
+export const updateQuantity = async (id: string, quantity: number) => {
+  if (!id || !quantity || quantity <= 0 || quantity > 10) {
     return;
   } else {
     try {
       const res = await axios.patch(
-        `${process.env.NEXT_PUBLIC_API_URL}/cart/remove-item/${id}`,
+        `${process.env.NEXT_PUBLIC_API_URL}/cart/update-quantity/${id}`,
         {
           quantity: quantity,
-        },
+        }, {
+          withCredentials:true,
+        }
       );
       return res.data;
     } catch (error) {
